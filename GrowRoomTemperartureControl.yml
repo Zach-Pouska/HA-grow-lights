@@ -1,0 +1,187 @@
+blueprint:
+  name: Grow Room Heater Control (Safe)
+  description: >
+    Controls a grow room heater based on lights ON/OFF with hysteresis,
+    sensor validation, and absolute safety cutoffs.
+  domain: automation
+  input:
+
+    temperature_sensor:
+      name: Temperature Sensor
+	  description: This is the temperature sensor you will use to monitor the room temperature.
+      selector:
+        entity:
+          domain: sensor
+
+    heater_switch:
+      name: Heater Switch
+	  description: This is the heater switch you will turn ON/OFF.
+      selector:
+        entity:
+          domain: switch
+
+    lights_switch:
+      name: Lights Switch
+	  description: This is the light switch you will monitor for ON/OFF status.
+      selector:
+        entity:
+          domain: switch
+
+    day_temp_low:
+      name: Day Temperature Low
+	  description: This is the daytime low temperature set by the helper.
+      selector:
+        entity:
+          domain: input_number
+
+    day_temp_high:
+      name: Day Temperature High
+	  description: This is the daytime high temperature set by the helper.
+      selector:
+        entity:
+          domain: input_number
+
+    night_temp_low:
+      name: Night Temperature Low
+	  description: This is the nighttime low temperature set by the helper.	  
+      selector:
+        entity:
+          domain: input_number
+
+    night_temp_high:
+      name: Night Temperature High
+	  description: This is the nighttime high temperature set by the helper.
+      selector:
+        entity:
+          domain: input_number
+
+    absolute_max_temp:
+      name: Absolute Maximum Temperature
+      description: Emergency heater cutoff temperature set by the helper.
+      selector:
+        entity:
+          domain: input_number
+
+    absolute_min_temp:
+      name: Absolute Minimum Temperature
+      description: Emergency minimum temperature (sensor fault protection) set by the helper.
+      default: 0
+      selector:
+        number:
+          min: -20
+          max: 20
+          step: 1
+          unit_of_measurement: "°C"
+
+mode: restart
+
+variables:
+  temp: "{{ states(temperature_sensor) | float(-100) }}"
+  abs_max: "{{ states(absolute_max_temp) | float(35) }}"
+  abs_min: "{{ absolute_min_temp }}"
+
+trigger:
+  - platform: state
+    entity_id:
+      - !input temperature_sensor
+      - !input lights_switch
+      - !input day_temp_low
+      - !input day_temp_high
+      - !input night_temp_low
+      - !input night_temp_high
+      - !input absolute_max_temp
+
+condition: []
+
+action:
+
+  # --- SENSOR INVALID FAILSAFE ---
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(temperature_sensor)
+                 in ['unknown', 'unavailable', ''] }}
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input heater_switch
+          - stop:
+              message: "Temperature sensor invalid – heater forced OFF"
+
+  # --- ABSOLUTE MAX FAILSAFE ---
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ temp >= abs_max }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input heater_switch
+          - stop:
+              message: "Absolute maximum temperature exceeded"
+
+  # --- ABSOLUTE MIN FAILSAFE ---
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ temp <= abs_min }}"
+        sequence:
+          - service: switch.turn_off
+            target:
+              entity_id: !input heater_switch
+          - stop:
+              message: "Temperature below absolute minimum – sensor fault assumed"
+
+  # --- NORMAL CONTROL ---
+  - choose:
+
+      # DAY MODE
+      - conditions:
+          - condition: state
+            entity_id: !input lights_switch
+            state: "on"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ temp <= states(day_temp_low) | float }}
+                sequence:
+                  - service: switch.turn_on
+                    target:
+                      entity_id: !input heater_switch
+
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ temp >= states(day_temp_high) | float }}
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: !input heater_switch
+
+      # NIGHT MODE
+      - conditions:
+          - condition: state
+            entity_id: !input lights_switch
+            state: "off"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ temp <= states(night_temp_low) | float }}
+                sequence:
+                  - service: switch.turn_on
+                    target:
+                      entity_id: !input heater_switch
+
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ temp >= states(night_temp_high) | float }}
+                sequence:
+                  - service: switch.turn_off
+                    target:
+                      entity_id: !input heater_switch
