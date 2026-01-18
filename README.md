@@ -1,8 +1,8 @@
 ## HA growRoom Lighting Control
 
-This is the most basic and simplistic blueprint that automates the control of the lights in your grow room.
-It is based on a standard 12 week grow cycle and automatically changes depending on the grow cycle.
-This blueprint has NO overrides, and is fully automatic. Just set the start date of your grow and forget.
+This is the most basic and simplistic blueprint that automates the control of the lights in your grow room.   
+It is based on a standard 12 week grow cycle and automatically changes depending on the grow cycle.   
+This blueprint has NO overrides, and is fully automatic. Just set the start date of your grow and forget.   
 
 ### Helpers
 
@@ -17,5 +17,5 @@ This blueprint has NO overrides, and is fully automatic. Just set the start date
 - Minimum Home Assistant Version: This script has only been tested with Ver 26+
 
 ### More
-This script is based on a standard 12 week grow cycle.
+This script is based on a standard 12 week grow cycle.   
 Grow cycle breakdown: 4 weeks vegetation and 8 weeks flowering.
