@@ -40,7 +40,7 @@ variables:
   prev_noon: "{{ state_attr('sun.sun','previous_noon') }}"
   next_noon: "{{ state_attr('sun.sun','next_noon') }}"
 
-  centering_ts: {{ as_timestamp(centering_entity) }}
+  centering_ts: "{{ as_timestamp(centering_entity) }}"
     
   #noon_ts: >
   #  {% if prev_noon is not none and next_noon is not none %}
