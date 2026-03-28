@@ -17,12 +17,19 @@ blueprint:
           enable_day: false
           enable_second: false
           allow_negative: false
-    centering_entity: 
-      name: time centering entity
+      default: 8
+    centering_entity_prev: 
+      name: time centering entity previous
       selector:
         entity: 
           filter:
-            domain: time
+            domain: datetime
+    centering_entity_next: 
+      name: time centering entity next
+      selector:
+        entity: 
+          filter:
+            domain: datetime
 
 mode: single
 
@@ -33,21 +40,10 @@ trigger:
     event: start
 
 variables:
-  light_switch: !input grow_light_switch
-
   now_ts: "{{ now().timestamp() }}"
 
-  prev_noon: "{{ state_attr('sun.sun','previous_noon') }}"
-  next_noon: "{{ state_attr('sun.sun','next_noon') }}"
-
-  centering_ts: "{{ as_timestamp(centering_entity) }}"
-    
-  #noon_ts: >
-  #  {% if prev_noon is not none and next_noon is not none %}
-  #    {{ as_timestamp(prev_noon if now_ts < as_timestamp(next_noon) else next_noon) }}
-  #  {% else %}
-  #    {{ as_timestamp(today_at('12:00')) }}
-  #  {% endif %}
+  centering_ts: >
+      {{ as_timestamp(centering_entity_prev if now_ts < as_timestamp(centering_entity_nexxt) else centering_entity_next) }}
 
   half_window: "{{ (light_hours / 2) * 3600 }}"
 
