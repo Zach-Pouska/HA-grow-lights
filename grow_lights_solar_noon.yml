@@ -17,7 +17,12 @@ blueprint:
           enable_day: false
           enable_second: false
           allow_negative: false
-      default: 12
+    centering_entity: 
+      name: time centering entity
+      selector:
+        entity: 
+          filter:
+            domain: time
 
 mode: single
 
@@ -35,17 +40,19 @@ variables:
   prev_noon: "{{ state_attr('sun.sun','previous_noon') }}"
   next_noon: "{{ state_attr('sun.sun','next_noon') }}"
 
-  noon_ts: >
-    {% if prev_noon is not none and next_noon is not none %}
-      {{ as_timestamp(prev_noon if now_ts < as_timestamp(next_noon) else next_noon) }}
-    {% else %}
-      {{ as_timestamp(today_at('12:00')) }}
-    {% endif %}
+  centering_ts: {{ as_timestamp(centering_entity) }}
+    
+  #noon_ts: >
+  #  {% if prev_noon is not none and next_noon is not none %}
+  #    {{ as_timestamp(prev_noon if now_ts < as_timestamp(next_noon) else next_noon) }}
+  #  {% else %}
+  #    {{ as_timestamp(today_at('12:00')) }}
+  #  {% endif %}
 
   half_window: "{{ (light_hours / 2) * 3600 }}"
 
-  lights_on_ts: "{{ noon_ts - half_window }}"
-  lights_off_ts: "{{ noon_ts + half_window }}"
+  lights_on_ts: "{{ centering_ts - half_window }}"
+  lights_off_ts: "{{ centering_ts + half_window }}"
 
 action:
   - choose:
